@@ -144,51 +144,34 @@ class App {
     //Koristimo .bind da bi se .this odnosilo na App a ne na window objekat
     document
       .querySelector("#meal-form")
-      .addEventListener("submit", this._newMeal.bind(this));
+      .addEventListener("submit", this._newItem.bind(this, "meal"));
     document
       .querySelector("#workout-form")
-      .addEventListener("submit", this._newWorkout.bind(this));
+      .addEventListener("submit", this._newItem.bind(this, "workout"));
   }
-  _newMeal(e) {
+  _newItem(type, e) {
     e.preventDefault();
-    const name = document.querySelector("#meal-name");
-    const calories = document.querySelector("#meal-calories");
+    const name = document.querySelector(`#${type}-name`);
+    const calories = document.querySelector(`#${type}-calories`);
 
     //Validate input
     if (name.value === "" || calories.value === "") {
       alert("Please fill in all fields.");
       return;
     }
-    const meal = new Meal(name.value, +calories.value); //+ pretvara string u broj
-    this._tracker.addMeal(meal);
-    name.value = "";
-    calories.value = "";
-
-    //Close collapse diolog
-    const collapseMeal = document.querySelector("#collapse-meal");
-    const bsCollapse = new bootstrap.Collapse(collapseMeal, {
-      toggle: true,
-    });
-  }
-
-  _newWorkout(e) {
-    e.preventDefault();
-    const name = document.querySelector("#workout-name");
-    const calories = document.querySelector("#workout-calories");
-
-    //Validate input
-    if (name.value === "" || calories.value === "") {
-      alert("Please fill in all fields.");
-      return;
+    if (type === "meal") {
+      const meal = new Meal(name.value, +calories.value); //+ pretvara string u broj
+      this._tracker.addMeal(meal);
+    } else {
+      const workout = new Workout(name.value, +calories.value); //+ pretvara string u broj
+      this._tracker.addWorkout(workout);
     }
-    const workout = new Workout(name.value, +calories.value); //+ pretvara string u broj
-    this._tracker.addWorkout(workout);
     name.value = "";
     calories.value = "";
 
     //Close collapse diolog
-    const collapseWorkout = document.querySelector("#collapse-workout");
-    const bsCollapse = new bootstrap.Collapse(collapseWorkout, {
+    const collapseItem = document.querySelector(`#collapse-${type}`);
+    const bsCollapse = new bootstrap.Collapse(collapseItem, {
       toggle: true,
     });
   }
