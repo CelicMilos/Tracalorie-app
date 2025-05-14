@@ -138,12 +138,59 @@ class Workout {
     this.calories = calories;
   }
 }
-const tracker = new CalorieTracker();
-const breakfast = new Meal("Breakfast", 400);
-const lunch = new Meal("Lunch", 2000);
-tracker.addMeal(breakfast);
-tracker.addMeal(lunch);
+class App {
+  constructor() {
+    this._tracker = new CalorieTracker();
+    //Koristimo .bind da bi se .this odnosilo na App a ne na window objekat
+    document
+      .querySelector("#meal-form")
+      .addEventListener("submit", this._newMeal.bind(this));
+    document
+      .querySelector("#workout-form")
+      .addEventListener("submit", this._newWorkout.bind(this));
+  }
+  _newMeal(e) {
+    e.preventDefault();
+    const name = document.querySelector("#meal-name");
+    const calories = document.querySelector("#meal-calories");
 
-const run = new Workout("Morning run", 400);
-tracker.addWorkout(run);
-console.log(tracker);
+    //Validate input
+    if (name.value === "" || calories.value === "") {
+      alert("Please fill in all fields.");
+      return;
+    }
+    const meal = new Meal(name.value, +calories.value); //+ pretvara string u broj
+    this._tracker.addMeal(meal);
+    name.value = "";
+    calories.value = "";
+
+    //Close collapse diolog
+    const collapseMeal = document.querySelector("#collapse-meal");
+    const bsCollapse = new bootstrap.Collapse(collapseMeal, {
+      toggle: true,
+    });
+  }
+
+  _newWorkout(e) {
+    e.preventDefault();
+    const name = document.querySelector("#workout-name");
+    const calories = document.querySelector("#workout-calories");
+
+    //Validate input
+    if (name.value === "" || calories.value === "") {
+      alert("Please fill in all fields.");
+      return;
+    }
+    const workout = new Workout(name.value, +calories.value); //+ pretvara string u broj
+    this._tracker.addWorkout(workout);
+    name.value = "";
+    calories.value = "";
+
+    //Close collapse diolog
+    const collapseWorkout = document.querySelector("#collapse-workout");
+    const bsCollapse = new bootstrap.Collapse(collapseWorkout, {
+      toggle: true,
+    });
+  }
+}
+const app = new App();
