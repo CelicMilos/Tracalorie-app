@@ -47,6 +47,17 @@ class CalorieTracker {
       this._render();
     }
   }
+  setLimit(calorieLimit) {
+    this._calorieLimit = calorieLimit;
+    this._displayCaloriesLimit();
+    this._render();
+  }
+  reset() {
+    this._totalCalories = 0;
+    this._meals = [];
+    this._workouts = [];
+    this._render();
+  }
 
   //Private methods//
 
@@ -218,6 +229,18 @@ class App {
     document
       .querySelector("#workout-items")
       .addEventListener("click", this._removeItem.bind(this, "workout"));
+    document
+      .querySelector("#filter-meals")
+      .addEventListener("keyup", this._filterItems.bind(this, "meal"));
+    document
+      .querySelector("#filter-workouts")
+      .addEventListener("keyup", this._filterItems.bind(this, "workout"));
+    document
+      .querySelector("#reset")
+      .addEventListener("click", this._reset.bind(this));
+    document
+      .querySelector("#limit-form")
+      .addEventListener("submit", this._setLimit.bind(this));
   }
   _newItem(type, e) {
     e.preventDefault();
@@ -260,6 +283,39 @@ class App {
         e.target.closest(".card").remove();
       }
     }
+  }
+
+  _filterItems(type, e) {
+    const text = e.target.value.toLowerCase();
+    document.querySelectorAll(`#${type}-items .card`).forEach((item) => {
+      const name = item.firstElementChild.firstElementChild.textContent;
+      if (name.toLowerCase().indexOf(text) !== -1) {
+        item.style.display = "block";
+      } else {
+        item.style.display = "none";
+      }
+    });
+  }
+  _reset() {
+    this._tracker.reset();
+    document.querySelector("#meal-items").innerHTML = "";
+    document.querySelector("#workout-items").innerHTML = "";
+    document.querySelector("#filter-meals").value = "";
+    document.querySelector("#filter-workouts").value = "";
+  }
+  _setLimit(e) {
+    e.preventDefault();
+    const limit = document.querySelector("#limit");
+    if (limit.value === "") {
+      alert("Please add a limit");
+      return;
+    }
+    this._tracker.setLimit(+limit.value);
+    limit.value = "";
+    //Close the modal
+    const modalEl = document.querySelector("#limit-modal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
   }
 }
 const app = new App();
