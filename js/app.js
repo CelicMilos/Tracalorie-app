@@ -18,12 +18,34 @@ class CalorieTracker {
   addMeal(meal) {
     this._meals.push(meal);
     this._totalCalories += meal.calories;
+    this._displayNewMeal(meal);
     this._render();
+  }
+  removeMeal(id) {
+    //.findIndex provera da li se idijevi slazu,ako se ne slazu vraca vrednist -1
+    const index = this._meals.findIndex((meal) => meal.id === id);
+    if (index !== -1) {
+      const meal = this._meals[index]; //izabran obrok za brisanje
+      this._totalCalories -= meal.calories; //smanjujemo ukpne kalorija
+      this._meals.splice(index, 1); //brisemo obrok iz niza
+      this._render();
+    }
   }
   addWorkout(workout) {
     this._workouts.push(workout);
     this._totalCalories -= workout.calories;
+    this._displayNewWorkout(workout);
     this._render();
+  }
+  removeWorkout(id) {
+    //.findIndex provera da li se idijevi slazu,ako se ne slazu vraca vrednist -1
+    const index = this._workouts.findIndex((workout) => workout.id === id);
+    if (index !== -1) {
+      const workout = this._workouts[index]; //izabran obrok za brisanje
+      this._totalCalories += workout.calories; //smanjujemo ukpne kalorija
+      this._workouts.splice(index, 1); //brisemo obrok iz niza
+      this._render();
+    }
   }
 
   //Private methods//
@@ -109,6 +131,48 @@ class CalorieTracker {
     const width = Math.min(persentage, 100); //Math.min nam,od ponudjenih vrednosti,daje manju
     calorieProgressEl.style.width = `${width}%`;
   }
+  _displayNewMeal(meal) {
+    const mealsEl = document.querySelector("#meal-items");
+    const mealEl = document.createElement("div");
+    mealEl.classList.add("card", "my-2");
+    mealEl.setAttribute("data-id", meal.id); //postavljamo data atribut,jer ce nam trebati kad brisemo obrko
+    mealEl.innerHTML = `
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <h4 class="mx-1">${meal.name}</h4>
+          <div class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5">
+            ${meal.calories}
+          </div>
+          <button class="delete btn btn-danger btn-sm mx-2">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    mealsEl.appendChild(mealEl);
+  }
+  _displayNewWorkout(workout) {
+    const workoutsEl = document.querySelector("#workout-items");
+    const workoutEl = document.createElement("div");
+    workoutEl.classList.add("card", "my-2");
+    workoutEl.setAttribute("data-id", workout.id); //postavljamo data atribut,jer ce nam trebati kad brisemo obrko
+    workoutEl.innerHTML = `
+      
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <h4 class="mx-1">${workout.name}</h4>
+            <div class="fs-1 bg-secondary text-white text-center rounded-2 px-2 px-sm-5">
+              ${workout.calories}
+            </div>
+            <button class="delete btn btn-danger btn-sm mx-2">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+    
+    `;
+    workoutsEl.appendChild(workoutEl);
+  }
 
   //Vanila JS,za razliku do reacta ne renderuje nove podatke automatski
   //pa zato moramo da napavimo metode koji ce to raditi
@@ -148,6 +212,12 @@ class App {
     document
       .querySelector("#workout-form")
       .addEventListener("submit", this._newItem.bind(this, "workout"));
+    document
+      .querySelector("#meal-items")
+      .addEventListener("click", this._removeItem.bind(this, "meal"));
+    document
+      .querySelector("#workout-items")
+      .addEventListener("click", this._removeItem.bind(this, "workout"));
   }
   _newItem(type, e) {
     e.preventDefault();
@@ -174,6 +244,22 @@ class App {
     const bsCollapse = new bootstrap.Collapse(collapseItem, {
       toggle: true,
     });
+  }
+  _removeItem(type, e) {
+    if (
+      e.target.classList.contains("delete") ||
+      e.target.classList.contains("fa-xmark")
+    ) {
+      if (confirm("Are you sure?")) {
+        const id = e.target.closest(".card").getAttribute("data-id");
+
+        //Brisemo predmet na osnovu tipa(meal ili workout)
+        type === "meal"
+          ? this._tracker.removeMeal(id)
+          : this._tracker.removeWorkout(id);
+        e.target.closest(".card").remove();
+      }
+    }
   }
 }
 const app = new App();
