@@ -1,9 +1,9 @@
 class CalorieTracker {
   constructor() {
-    this._calorieLimit = 2000;
-    this._totalCalories = 0;
-    this._meals = [];
-    this._workouts = [];
+    this._calorieLimit = Storage.getCalorieLimit(); //Uzimamo vrednosti iz localaStarage,ako ih ima
+    this._totalCalories = Storage.getTotalCalories(); //Uzimamo vrednosti iz localaStarage,ako ih ima
+    this._meals = Storage.getMeals(); //Uzimamo vrednosti iz localaStarage,ako ih ima
+    this._workouts = Storage.getWorkouts(); //Uzimamo vrednosti iz localaStarage,ako ih ima
 
     this._displayCaloriesLimit();
     this._displayCaloriesTotal();
@@ -11,6 +11,9 @@ class CalorieTracker {
     this._displayCaloriesBurned();
     this._displayCaloriesProgress();
     this._displayCaloriesRemaining();
+
+    //Da u inputu pise poslednja vrednost koju smo postavili za limit
+    document.querySelector("#limit").value = this._calorieLimit;
   }
 
   //Public methods/API //
@@ -18,6 +21,8 @@ class CalorieTracker {
   addMeal(meal) {
     this._meals.push(meal);
     this._totalCalories += meal.calories;
+    Storage.updatetotalCalories(this._totalCalories); //apdejtujemo Storage
+    Storage.saveMeal(meal);
     this._displayNewMeal(meal);
     this._render();
   }
@@ -27,13 +32,17 @@ class CalorieTracker {
     if (index !== -1) {
       const meal = this._meals[index]; //izabran obrok za brisanje
       this._totalCalories -= meal.calories; //smanjujemo ukpne kalorija
+      Storage.updatetotalCalories(this._totalCalories); //updejtujemo Storage
       this._meals.splice(index, 1); //brisemo obrok iz niza
+      Storage.removeMeal(id);
       this._render();
     }
   }
   addWorkout(workout) {
     this._workouts.push(workout);
     this._totalCalories -= workout.calories;
+    Storage.updatetotalCalories(this._totalCalories); //apdejtujemo Storage
+    Storage.saveWorkout(workout);
     this._displayNewWorkout(workout);
     this._render();
   }
@@ -43,20 +52,32 @@ class CalorieTracker {
     if (index !== -1) {
       const workout = this._workouts[index]; //izabran obrok za brisanje
       this._totalCalories += workout.calories; //smanjujemo ukpne kalorija
+      Storage.updatetotalCalories(this._totalCalories); //apdejtujemo Storage
       this._workouts.splice(index, 1); //brisemo obrok iz niza
+      Storage.removeWorkout(id);
       this._render();
     }
   }
   setLimit(calorieLimit) {
     this._calorieLimit = calorieLimit;
+    Storage.setCalorieLimit(calorieLimit);
     this._displayCaloriesLimit();
     this._render();
+  }
+
+  loadItems() {
+    //funkciju pozivamo u App klasi u construktoru
+    this._meals.forEach((meal) => this._displayNewMeal(meal));
+    this._workouts.forEach((workout) => this._displayNewWorkout(workout));
   }
   reset() {
     this._totalCalories = 0;
     this._meals = [];
     this._workouts = [];
     this._render();
+    Storage.resetStorage();
+    //Ako zelimo sve da izbrisemo onda
+    // localStorage.clear();
   }
 
   //Private methods//
@@ -71,11 +92,11 @@ class CalorieTracker {
   }
   _displayCaloriesConsumed() {
     const caloriesConsumedEl = document.querySelector("#calories-consumed");
-    const consumend = this._meals.reduce(
+    const consumed = this._meals.reduce(
       (total, meal) => total + meal.calories,
       0
     ); //zbir svih obroka(0-argument odakle total pocinje)
-    caloriesConsumedEl.innerHTML = consumend;
+    caloriesConsumedEl.innerHTML = consumed;
   }
   _displayCaloriesBurned() {
     const caloriesBurnedEl = document.querySelector("#calories-burned");
@@ -213,9 +234,101 @@ class Workout {
     this.calories = calories;
   }
 }
+
+class Storage {
+  //Staticni metod.Mogu da se pozovu n samu klasu bez instanciranja
+  static getCalorieLimit(defaultLimit = 2000) {
+    let calorieLimit;
+    if (localStorage.getItem("calorieLimit") === null) {
+      calorieLimit = defaultLimit;
+    } else {
+      calorieLimit = +localStorage.getItem("calorieLimit"); //+ pretvara string u broj
+    }
+    return calorieLimit;
+  }
+  static setCalorieLimit(calorieLimit) {
+    localStorage.setItem("calorieLimit", calorieLimit);
+  }
+  static getTotalCalories(defaultCalories = 0) {
+    let totalCalories;
+    if (localStorage.getItem("totalCalories") === null) {
+      totalCalories = defaultCalories;
+    } else {
+      totalCalories = +localStorage.getItem("totalCalories");
+    }
+    return totalCalories;
+  }
+  static updatetotalCalories(calories) {
+    localStorage.setItem("totalCalories", calories);
+  }
+  static getMeals() {
+    let meals;
+    if (localStorage.getItem("meals") === null) {
+      meals = []; //Ako nema obroka u localStorage,onda meals postaje prazan niz
+    } else {
+      meals = JSON.parse(localStorage.getItem("meals")); //Ako ih ima,pozivamo ih iz localStorage i vacamo u kod
+    }
+    return meals;
+  }
+  static saveMeal(meal) {
+    const meals = Storage.getMeals(); //uzimamo obroke(array) iz LocalStorage
+    meals.push(meal); //ubacujemo novi obrok u array
+    localStorage.setItem("meals", JSON.stringify(meals)); //ubacujemo novi array u
+  }
+  static removeMeal(id) {
+    const meals = Storage.getMeals();
+    meals.forEach((meal, index) => {
+      //prolazimo kroz svaki obrok u array i uzimimo njihov index
+      if (meal.is === id) {
+        //ako se id obroka slaze sa id koji je unet
+        meals.splice(index, 1); //izbacujemo jedan obrok iz array na mesto unetog indexa
+      }
+    });
+    localStorage.setItem("meals", JSON.stringify(meals)); //ponovo postavljamo localStorage bez tog jednog obroka
+  }
+
+  static getWorkouts() {
+    let workouts;
+    if (localStorage.getItem("workouts") === null) {
+      workouts = []; //Ako nema obroka u localStorage,onda workouts postaje prazan niz
+    } else {
+      workouts = JSON.parse(localStorage.getItem("workouts")); //Ako ih ima,pozivamo ih iz localStorage i vacamo u kod
+    }
+    return workouts;
+  }
+  static saveWorkout(workout) {
+    const workouts = Storage.getWorkouts(); //uzimamo vezbanja(array) iz LocalStorage
+    workouts.push(workout); //ubacujemo novo vezbanje u array
+    localStorage.setItem("workouts", JSON.stringify(workouts)); //ubacujemo novi array u localStorage
+  }
+  static removeWorkout(id) {
+    const workouts = Storage.getWorkouts();
+    workouts.forEach((workout, index) => {
+      //prolazimo kroz svako vezbanje u array i uzimimo njihov index
+      if (workout.is === id) {
+        //ako se id vezbanja slaze sa id koji je unet
+        workouts.splice(index, 1); //izbacujemo jedno veznbanje iz array na mesto unetog indexa
+      }
+    });
+    localStorage.setItem("workouts", JSON.stringify(workouts)); //ponovo postavljamo localStorage bez tog jednog vezbanja
+  }
+
+  static resetStorage() {
+    localStorage.removeItem("totalCalories");
+    localStorage.removeItem("workouts");
+    localStorage.removeItem("meals");
+
+    //Ako zelimo sve da izbisemo
+    localStorage.clear();
+  }
+}
 class App {
   constructor() {
     this._tracker = new CalorieTracker();
+    this._loadEvenListeners();
+    this._tracker.loadItems();
+  }
+  _loadEvenListeners() {
     //Koristimo .bind da bi se .this odnosilo na App a ne na window objekat
     document
       .querySelector("#meal-form")
